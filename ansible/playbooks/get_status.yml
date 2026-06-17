@@ -1,0 +1,44 @@
+---
+- name: Gather Redis Cluster Live Status
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Get Cluster Nodes Info
+      shell: redis-cli -p 6379 cluster nodes | grep "myself"
+      register: cluster_nodes_out
+      changed_when: false
+
+    - name: Get Redis Version
+      shell: redis-cli -p 6379 info server | grep "redis_version:" | cut -d':' -f2 | tr -d '\r\n'
+      register: redis_version_out
+      changed_when: false
+
+    - name: Get Used Memory
+      shell: redis-cli -p 6379 info memory | grep "used_memory_human:" | cut -d':' -f2 | tr -d '\r\n'
+      register: used_memory_out
+      changed_when: false
+
+    - name: Get DB Size (Keys Count)
+      shell: redis-cli -p 6379 dbsize
+      register: dbsize_out
+      changed_when: false
+
+    - name: Construct Node Dictionary
+      set_fact:
+        node_info:
+          nodes_line: "{{ cluster_nodes_out.stdout }}"
+          version: "v{{ redis_version_out.stdout }}"
+          memory: "{{ used_memory_out.stdout }}"
+          keys: "{{ dbsize_out.stdout }}"
+
+- name: Aggregate and Print Output
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Aggregate node infos
+      set_fact:
+        all_nodes: "{{ groups['all'] | map('extract', hostvars, 'node_info') | list }}"
+
+    - name: Output JSON
+      debug:
+        msg: "{{ all_nodes | to_json }}"
