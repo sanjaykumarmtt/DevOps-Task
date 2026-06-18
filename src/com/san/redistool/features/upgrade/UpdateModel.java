@@ -15,9 +15,9 @@ import com.san.redistool.features.dataverify.DataVerifyView;
 
 import com.san.redistool.features.dataverify.IDataVerifyView;
 import com.san.redistool.features.states.ISattesViewGetReplicaData;
-import com.san.redistool.features.states.StatesView;
+import com.san.redistool.features.states.StatusView;
 
-public class UpgradeModel implements IUpgradeModel {
+public class UpdateModel implements IUpgradeModel {
 
 	private IUpgradePresenterToModel iUpgradePresenterToModel;
 	private IDataVerifyView iDataVerifyView;
@@ -25,9 +25,9 @@ public class UpgradeModel implements IUpgradeModel {
 	private ISattesViewGetReplicaData ISattesViewGetReplicaData;
 	private IAnsibleConfig iAnsibleConfig;
 
-	public UpgradeModel(IUpgradePresenterToModel iUpgradePresenterToModel) {
+	public UpdateModel(IUpgradePresenterToModel iUpgradePresenterToModel) {
 		this.iUpgradePresenterToModel = iUpgradePresenterToModel;
-		this.ISattesViewGetReplicaData = new StatesView();
+		this.ISattesViewGetReplicaData = new StatusView();
 
 		this.iDataVerifyView = new DataVerifyView();
 		this.iClusterHealthView = new ClusterHealthView();
@@ -41,8 +41,14 @@ public class UpgradeModel implements IUpgradeModel {
 
 		List<RedisNodeDTO> preFlightTopology = ISattesViewGetReplicaData.getReplicaData();
 		boolean allMastersUpgraded = true;
-		for (RedisNodeDTO node : preFlightTopology) {
-			if ("master".equalsIgnoreCase(node.getRole())) {
+		List<RedisNodeDTO> finalTopology = ISattesViewGetReplicaData.getReplicaData();
+
+		if (finalTopology == null) {
+			allMastersUpgraded = false;
+			iUpgradePresenterToModel
+					.error("🛑 [CRITICAL FAILURE] Cannot fetch final topology! Cluster connection lost.");
+		} else {
+			for (RedisNodeDTO node : finalTopology) {
 				if (!node.getVersion().replace("v", "").trim().equals(version.replace("v", "").trim())) {
 					allMastersUpgraded = false;
 					break;
@@ -50,36 +56,50 @@ public class UpgradeModel implements IUpgradeModel {
 			}
 		}
 		if (allMastersUpgraded) {
-			iUpgradePresenterToModel.messages("🛑 [SKIP] All master nodes are already running the target version: v" + version);
+			iUpgradePresenterToModel
+					.messages("🛑 [SKIP] All master nodes are already running the target version: v" + version);
 			return;
 		}
-
 
 		iUpgradePresenterToModel.messages("\n--- [STEP 1] Upgrading Initial Replicas ---");
 		upgradeReplica(version);
 
-
 		iUpgradePresenterToModel.messages("\n--- [STEP 2] Failing Over Masters and Upgrading them One by One ---");
 		List<RedisNodeDTO> initialTopology = ISattesViewGetReplicaData.getReplicaData();
+		if (initialTopology == null) {
+			iUpgradePresenterToModel.error("🛑 [CRITICAL FAILURE] Cannot fetch initial topology! Cluster connection lost.");
+			return;
+		}
 		upgradeAllMastersWithZeroDowntime(initialTopology, version);
 
-
+	
 		iUpgradePresenterToModel.messages("\n--- [STEP 3] Post-Upgrade Verification ---");
 		boolean isDataValid = iDataVerifyView.init();
-		
+
 		boolean allNodesUpgraded = true;
-		List<RedisNodeDTO> finalTopology = ISattesViewGetReplicaData.getReplicaData();
-		for (RedisNodeDTO node : finalTopology) {
-			if (!node.getVersion().replace("v", "").trim().equals(version.replace("v", "").trim())) {
-				allNodesUpgraded = false;
-				break;
+		List<RedisNodeDTO> finalTopolog = ISattesViewGetReplicaData.getReplicaData();
+		
+		if (finalTopolog == null) {
+			allNodesUpgraded = false;
+			iUpgradePresenterToModel.error("🛑 [CRITICAL FAILURE] Cannot fetch final topology! Cluster connection lost.");
+		} else {
+			for (RedisNodeDTO node : finalTopolog) {
+				if (!node.getVersion().replace("v", "").trim().equals(version.replace("v", "").trim())) {
+					allNodesUpgraded = false;
+					break;
+				}
 			}
 		}
+		
+		
+		
 
 		if (isDataValid && allNodesUpgraded) {
-			iUpgradePresenterToModel.messages("\n🎉 UPGRADE COMPLETE — all nodes on v" + version + ", data integrity verified");
+			iUpgradePresenterToModel
+					.messages("\n🎉 UPGRADE COMPLETE — all nodes on v" + version + ", data integrity verified");
 		} else {
-			iUpgradePresenterToModel.error("\n🛑 [CRITICAL FAILURE] Verification failed! Data Valid: " + isDataValid + ", All Nodes Upgraded: " + allNodesUpgraded);
+			iUpgradePresenterToModel.error("\n🛑 [CRITICAL FAILURE] Verification failed! Data Valid: " + isDataValid
+					+ ", All Nodes Upgraded: " + allNodesUpgraded);
 		}
 	}
 
@@ -88,6 +108,11 @@ public class UpgradeModel implements IUpgradeModel {
 
 		if (iDataVerifyView.init() && iClusterHealthView.init()) {
 			List<RedisNodeDTO> replica = ISattesViewGetReplicaData.getReplicaData();
+
+			if (replica == null) {
+				iUpgradePresenterToModel.error("🛑 [CRITICAL FAILURE] Cannot fetch replica topology! Cluster connection lost.");
+				return;
+			}
 
 			String currentProjectDir = System.getProperty("user.dir");
 			String replicasPlaybook = iAnsibleConfig.getUpgradeReplicasPlaybook();
@@ -222,6 +247,11 @@ public class UpgradeModel implements IUpgradeModel {
 
 	public void upgradeAllMastersWithZeroDowntime(List<RedisNodeDTO> redisNodeList, String version) {
 
+		if (redisNodeList == null) {
+			iUpgradePresenterToModel.error("🛑 [CRITICAL FAILURE] Topology list is null!");
+			return;
+		}
+
 		List<RedisNodeDTO> replicaNodes = new ArrayList<>();
 		for (RedisNodeDTO node : redisNodeList) {
 			if ("REPLICA".equalsIgnoreCase(node.getRole())) {
@@ -248,10 +278,15 @@ public class UpgradeModel implements IUpgradeModel {
 				String statusPath = iAnsibleConfig.getStatus();
 				String inventoryPath = statusPath.substring(0, statusPath.lastIndexOf("/")) + "/../inventory/hosts.ini";
 				String playbookPath = statusPath.substring(0, statusPath.lastIndexOf("/")) + "/failover_node.yml";
+				String os = System.getProperty("os.name").toLowerCase();
 
-				ProcessBuilder playbookPb = new ProcessBuilder("ansible-playbook", "-i", inventoryPath, playbookPath,
-						"--extra-vars",
-						String.format("target_replica_ip=%s target_replica_port=%s", replicaIp, replicaPort));
+				ProcessBuilder playbookPb = new ProcessBuilder();
+				String extraVarsFailover = String.format("target_replica_ip=%s target_replica_port=%s", replicaIp, replicaPort);
+				if (os.contains("win")) {
+					playbookPb.command("cmd.exe", "/c", "ansible-playbook", "-i", inventoryPath, playbookPath, "--extra-vars", extraVarsFailover);
+				} else {
+					playbookPb.command("ansible-playbook", "-i", inventoryPath, playbookPath, "--extra-vars", extraVarsFailover);
+				}
 				playbookPb.environment().put("ANSIBLE_HOST_KEY_CHECKING", "False");
 				playbookPb.inheritIO();
 				Process playbookProcess = playbookPb.start();
@@ -263,38 +298,43 @@ public class UpgradeModel implements IUpgradeModel {
 					return;
 				}
 
-				boolean isMaster = false;
-				int maxAttempts = 60;
-
+				// ❌ இந்த வரியை தேடிப்பிடிங்க சஞ்சாய்:
 				iUpgradePresenterToModel.messages("⏳ Waiting for success response from " + replicaIp + "...");
-				for (int attempt = 0; attempt < maxAttempts; attempt++) {
 
-					ProcessBuilder checkPb = new ProcessBuilder("redis-cli", "-h", replicaIp, "-p", replicaPort,
-							"cluster", "nodes");
-					Process checkProcess = checkPb.start();
+				// ✂️ அங்கிருந்து கீழே இருக்கிற பழைய 'for' லூப் மொத்தத்தையும் தூக்கிட்டு...
+				// ✅ இந்த கோடை மட்டும் அப்படியே அந்த இடத்துல ஒட்டிடுங்க தல:
 
-					StringBuilder clusterNodesOutput = new StringBuilder();
-					try (BufferedReader reader = new BufferedReader(
-							new InputStreamReader(checkProcess.getInputStream()))) {
-						String line;
-						while ((line = reader.readLine()) != null) {
-							clusterNodesOutput.append(line).append("\n");
-						}
-					}
-					checkProcess.waitFor();
+				iUpgradePresenterToModel.messages("⏳ Waiting for success response inside Ansible check playbook...");
 
-					if (clusterNodesOutput.toString().contains("myself,master")) {
-						iUpgradePresenterToModel.messages(
-								"✅ Success Response Received! " + replicaIp + " It has now become a new master copy..");
-						isMaster = true;
-						break;
-					}
-					Thread.sleep(2000);
+				ProcessBuilder checkPb = new ProcessBuilder();
+				String checkPlaybookPath = iAnsibleConfig.getPlaybook() + "/check_failover_status.yml";
+				if (os.contains("win")) {
+					checkPb.command("cmd.exe", "/c", "ansible-playbook", "-i", inventoryPath, checkPlaybookPath, "--extra-vars", extraVarsFailover);
+				} else {
+					checkPb.command("ansible-playbook", "-i", inventoryPath, checkPlaybookPath, "--extra-vars", extraVarsFailover);
 				}
 
-				if (!isMaster) {
-					iUpgradePresenterToModel.error(
-							"❌ Timeout! The master response was not received within the specified time.");
+				checkPb.environment().put("ANSIBLE_HOST_KEY_CHECKING", "False");
+				checkPb.redirectErrorStream(true);
+
+				Process checkProcess = checkPb.start();
+
+				StringBuilder ansibleOutput = new StringBuilder();
+				try (BufferedReader reader = new BufferedReader(new InputStreamReader(checkProcess.getInputStream()))) {
+					String line;
+					while ((line = reader.readLine()) != null) {
+						ansibleOutput.append(line).append("\n");
+						iUpgradePresenterToModel.messages(line);
+					}
+				}
+				int exCode = checkProcess.waitFor();
+
+				if (exCode == 0
+						&& ansibleOutput.toString().contains("FAILOVER_COMPLETED_SUCCESSFULLY_AND_NODE_IS_MASTER")) {
+					iUpgradePresenterToModel.messages(
+							"\n✅ Success Response Received! " + replicaIp + " It has now become a new master copy..");
+				} else {
+					iUpgradePresenterToModel.error("\n❌ Timeout or Failure! Master validation failed inside Ansible.");
 					iUpgradePresenterToModel.error("⚠️ [TERMINATING] Stopping the upgrade process immediately.");
 					return;
 				}
@@ -312,22 +352,26 @@ public class UpgradeModel implements IUpgradeModel {
 
 				String rawOutput = runAnsiblePlaybookLive(replicasPlaybook, extraVars, currentProjectDir);
 				if (rawOutput != null && rawOutput.contains("NODE_UPGRADED_SUCCESSFULLY_AND_CLUSTER_STATE_IS_OK")) {
-					iUpgradePresenterToModel.messages("✅ [" + (i + 1) + "/" + replicaNodes.size() + "] Upgraded old master " + oldMasterIp + " — cluster: ok");
+					iUpgradePresenterToModel.messages("✅ [" + (i + 1) + "/" + replicaNodes.size()
+							+ "] Upgraded old master " + oldMasterIp + " — cluster: ok");
 				} else {
-					iUpgradePresenterToModel.error("❌ [CRITICAL FAILURE] Upgrade execution failed on demoted master: " + oldMasterIp);
+					iUpgradePresenterToModel
+							.error("[CRITICAL FAILURE] Upgrade execution failed on demoted master: " + oldMasterIp);
 					return;
 				}
 
-				iUpgradePresenterToModel.messages("👍 [" + (i + 1) + "/" + replicaNodes.size() + "] Successfully completed iteration!");
-				
+				iUpgradePresenterToModel
+						.messages("👍 [" + (i + 1) + "/" + replicaNodes.size() + "] Successfully completed iteration!");
+
 				iUpgradePresenterToModel.messages("⏳ Waiting 5 seconds for cluster topology to stabilize...");
 				Thread.sleep(5000);
 
 			} catch (Exception e) {
-				iUpgradePresenterToModel.error("❌ Error in iteration " + i + ": " + e.getMessage());
+				iUpgradePresenterToModel.error("Error in iteration " + i + ": " + e.getMessage());
 			}
 		}
 	}
+
 	@Override
 	public void upgradeAllMastersWithZeroDowntime(List<RedisNodeDTO> redisNodeList) {
 		upgradeAllMastersWithZeroDowntime(redisNodeList, "7.2.6");

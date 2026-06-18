@@ -1,18 +1,19 @@
 package com.san.redistool.features;
 
 public abstract class BaseRedisTool {
-	
-	
+
+	private static final String ANSI_RED = "\u001B[31m";
+	private static final String ANSI_RESET = "\u001B[0m";
+
 	protected void showMessage(String message) {
 		System.out.println(message);
 	}
 
-	protected void showError(String error) {
-		System.out.println(error);
+	public void showError(String errorMsg) {
+		System.out.println(ANSI_RED + "❌ " + errorMsg + ANSI_RESET);
 	}
-	
+
 	protected void showMessageSamLine(String message) {
-		
 		System.out.print(message);
 	}
 
@@ -20,4 +21,6 @@ public abstract class BaseRedisTool {
 		System.exit(0);
 	}
 
+	
+	
 }

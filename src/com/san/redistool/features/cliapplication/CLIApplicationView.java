@@ -141,8 +141,3 @@ public class CLIApplicationView extends BaseRedisTool implements ICLIApplication
 	}
 }
 
-// ​data seed --keys 1000
-// ​upgrade --target-version 7.2.6
-//upgrade --target-version 7.2.6 --strategy rolling
-
-//.provision --version 7.0.15 --masters 3 --replicas-per-master 1

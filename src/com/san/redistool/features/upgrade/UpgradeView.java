@@ -2,7 +2,7 @@ package com.san.redistool.features.upgrade;
 
 import com.san.redistool.features.BaseRedisTool;
 
-public class UpgradeView extends BaseRedisTool implements IUpgradeView{
+public class UpgradeView extends BaseRedisTool implements IUpdateView{
 	
 	private IUpgradePresenterToView IUpgradePresenterToView;
 

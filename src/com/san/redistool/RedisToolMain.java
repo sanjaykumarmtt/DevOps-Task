@@ -26,7 +26,7 @@ public class RedisToolMain {
 				+ " 💡 provision            : provision --version 7.0.15 --masters 3 --replicas-per-master 1\n"
 				+ " 🐳 data seed            : data seed --keys 1000\n"
 				+ " 🔍 upgrade              : upgrade --target-version 7.2.6 \n"
-				+ " 📊 status               : redis-tool status.\n"
+				+ " 📊 status               : redis-tool status\n"
 				+ " 🩺 cluster Health Check : redis-tool cluster-health-check\n"
 				+ " 🔍 data verify          : redis-tool data verify\n"
 				+ " 🚀 verify --full        : redis-tool verify --full\n"

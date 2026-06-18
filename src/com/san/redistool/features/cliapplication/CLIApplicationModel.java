@@ -11,8 +11,8 @@ import com.san.redistool.features.dataverify.IDataVerifyView;
 import com.san.redistool.features.fullverification.FullVerificationView;
 import com.san.redistool.features.fullverification.IFullVerificationView;
 import com.san.redistool.features.states.IStatesView;
-import com.san.redistool.features.states.StatesView;
-import com.san.redistool.features.upgrade.IUpgradeView;
+import com.san.redistool.features.states.StatusView;
+import com.san.redistool.features.upgrade.IUpdateView;
 import com.san.redistool.features.upgrade.UpgradeView;
 
 public class CLIApplicationModel implements ICLIApplicationModel {
@@ -22,7 +22,7 @@ public class CLIApplicationModel implements ICLIApplicationModel {
 	private IClusterHealthView iClusterHealthView;
 	private IDataVerifyView iDataVerifyView;
 	private IStatesView iStatesView;
-	private IUpgradeView iUpgradeView;
+	private IUpdateView iUpgradeView;
 	private IFullVerificationView iFullVerificationView;
 
 	public CLIApplicationModel(ICLIApplicationPresenterToModel iCLIApplicationPresenterToModel) {
@@ -33,7 +33,7 @@ public class CLIApplicationModel implements ICLIApplicationModel {
 		this.iDataVerifyView = new DataVerifyView();
 		this.iFullVerificationView = new FullVerificationView();
 
-		this.iStatesView = new StatesView();
+		this.iStatesView = new StatusView();
 		this.iUpgradeView = new UpgradeView();
 	}
 
@@ -41,33 +41,6 @@ public class CLIApplicationModel implements ICLIApplicationModel {
 	public void init() {
 		chikDorckerAndAnsible();
 	}
-
-//	@Override
-//	public void chikDorckerAndAnsible() {
-//
-//		boolean dockerOk = checkCommand("docker --version");
-//		boolean ansibleOk = checkCommand("ansible-playbook --version");
-//		boolean podmanOk = checkCommand("podman --version");
-//
-//		if ((dockerOk || podmanOk) && ansibleOk) {
-//			
-//			if(dockerOk) {
-//				iCLIApplicationPresenterToModel
-//				.Message("✓ Docker found");
-//			}else if(podmanOk) {
-//				iCLIApplicationPresenterToModel
-//				.Message("✓ Podman found");
-//			}
-//			iCLIApplicationPresenterToModel
-//					.Message("✓ Ansible found\n-----------------------------------------");
-//			iCLIApplicationPresenterToModel.start();
-//
-//		} else {
-//			iCLIApplicationPresenterToModel.Error(
-//					"\n❌ ERROR: Required dependencies are missing!\nPlease install them before running the tool:\n Podman : https://podm an.io/docs/installation\n👉 Docker: https://docs.docker.com/get-docker/\n👉 Ansible: https://docs.ansible.com/");
-//			System.exit(1);
-//		}
-//	}
 	
 	@Override
 	public void chikDorckerAndAnsible() {
@@ -160,23 +133,6 @@ public class CLIApplicationModel implements ICLIApplicationModel {
 		}
 	}
 
-
-//	private static boolean checkCommand(String command) {
-//		try {
-//			Process process;
-//			String os = System.getProperty("os.name").toLowerCase();
-//
-//			if (os.contains("win")) {
-//				process = Runtime.getRuntime().exec(new String[] { "cmd.exe", "/c", command });
-//			} else {
-//				process = Runtime.getRuntime().exec(command);
-//			}
-//			return process.waitFor() == 0;
-//		} catch (Exception e) {
-//			return false;
-//		}
-//	}
-
 	public void runProvision(String version) {
 		iCLIApplicationPresenterToModel.Message("🚀 [Initiating] Deploying Redis Cluster Infrastructure...");
 		iAnsibleConfig.executeProvision(version);
@@ -189,7 +145,7 @@ public class CLIApplicationModel implements ICLIApplicationModel {
 
 	public void runVerification() {
 		iCLIApplicationPresenterToModel.Message("🚀 [Initiating] Verifying Redis Cluster Data Integrity...");
-		iDataVerifyView.init();
+		if(!iDataVerifyView.init()) iCLIApplicationPresenterToModel.Error("Redis cluster data is empty or not stored yet.");
 	}
 
 	@Override

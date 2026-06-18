@@ -1,6 +1,6 @@
 package com.san.redistool.features.upgrade;
 
-public interface IUpgradeView {
+public interface IUpdateView {
 	
 	void init(String version);
 	

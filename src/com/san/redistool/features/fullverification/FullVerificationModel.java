@@ -8,7 +8,7 @@ import com.san.redistool.features.data.RedisNodeDTO;
 import com.san.redistool.features.dataverify.DataVerifyView;
 import com.san.redistool.features.dataverify.IDataVerifyView;
 import com.san.redistool.features.states.ISattesViewGetReplicaData;
-import com.san.redistool.features.states.StatesView;
+import com.san.redistool.features.states.StatusView;
 
 public class FullVerificationModel implements IFullVerificationModel {
 
@@ -21,7 +21,7 @@ public class FullVerificationModel implements IFullVerificationModel {
 	public FullVerificationModel(IFullVerificationPresenterToModel iFullVerificationPresenterToModel) {
 		this.iFullVerificationPresenterToModel = iFullVerificationPresenterToModel;
 		this.iDataVerifyView = new DataVerifyView();
-		this.iSattesViewGetReplicaData = new StatesView();
+		this.iSattesViewGetReplicaData = new StatusView();
 
 		this.iHealthStatus = new ClusterHealthView();
 	}

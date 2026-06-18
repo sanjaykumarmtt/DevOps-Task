@@ -15,5 +15,7 @@ public interface IAnsibleConfig {
 
 
 	void executeProvision(String version);
+	
+	public String getPlaybook();
 
 }

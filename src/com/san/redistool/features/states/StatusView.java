@@ -6,11 +6,11 @@ import java.util.List;
 import com.san.redistool.features.BaseRedisTool;
 import com.san.redistool.features.data.RedisNodeDTO;
 
-public class StatesView extends BaseRedisTool implements IStatesView,ISattesViewGetReplicaData{
+public class StatusView extends BaseRedisTool implements IStatesView,ISattesViewGetReplicaData{
 	
 	private IStatesPresenterToView iStatesPresenterToView;
 	
-	public StatesView() {
+	public StatusView() {
 		this.iStatesPresenterToView = new StatesPresenter(this);
 	}
 

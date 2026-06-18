@@ -68,14 +68,14 @@ public class ClusterHealthView extends BaseRedisTool implements IClusterHealthVi
 	            return true;
 	        } else {
 	            
-	            System.out.println(RED + "❌ 1. Nodes Status     : ERROR or UNREACHABLE" + RESET);
-	            System.out.println(RED + "❌ 2. Cluster State    : FAIL (Target state 'ok' not found)" + RESET);
-	            System.out.println(RED + "🛑 [FAILURE] Cluster Health Check failed. System has issues!" + RESET);
+	        	showError(" 1. Nodes Status     : ERROR or UNREACHABLE");
+	        	showError(" 2. Cluster State    : FAIL (Target state 'ok' not found)");
+	        	showError("🛑 [FAILURE] Cluster Health Check failed. System has issues!");
 	            return false;
 	        }
 
 	    } catch (Exception e) {
-	        showError(RED + "❌ Error while executing health check playbook: " + e.getMessage() + RESET);
+	        showError(" Error while executing health check playbook: " + e.getMessage());
 	        return false;
 	    }
 	}

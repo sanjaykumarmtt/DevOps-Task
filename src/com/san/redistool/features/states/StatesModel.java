@@ -27,7 +27,7 @@ public class StatesModel implements IStatesModel {
 		String rawOutput = executeStates(iAnsibleConfig.getStatus());
 
 		if (rawOutput == null) {
-			iStatesPresenterToModel.showError("❌ Error: Ansible output is null!");
+			iStatesPresenterToModel.showError("Error: Ansible output is null!");
 			return;
 		}
 
@@ -35,7 +35,7 @@ public class StatesModel implements IStatesModel {
 
 			int jsonStartIdx = rawOutput.indexOf("{");
 			if (jsonStartIdx == -1) {
-				iStatesPresenterToModel.showError("❌ Error: Invalid JSON format from Ansible!");
+				iStatesPresenterToModel.showError("Error: Invalid JSON format from Ansible!");
 				return;
 			}
 
@@ -45,7 +45,7 @@ public class StatesModel implements IStatesModel {
 			if (rawMsg.isEmpty() || rawMsg.contains("version:v|mem:|keys:|nodes_raw:")) {
 				iStatesPresenterToModel.showError("⚠️ [INFO] Redis Cluster There is no data. Parsing is skipped.");
 
-				iStatesPresenterToModel.showError("❌ Error: Redis cluster data is empty or not stored yet.");
+				iStatesPresenterToModel.showError("Error: Redis cluster data is empty or not stored yet.");
 				return;
 			}
 
@@ -54,7 +54,7 @@ public class StatesModel implements IStatesModel {
 			iStatesPresenterToModel.parseAndPrintStatusResult(status);
 
 		} catch (Exception e) {
-			iStatesPresenterToModel.showError("❌ Error inside init status: " + e.getMessage());
+			iStatesPresenterToModel.showError("Error inside init status: " + e.getMessage());
 		}
 	}
 
@@ -88,7 +88,6 @@ public class StatesModel implements IStatesModel {
 		} catch (Exception e) {
 			iStatesPresenterToModel.showError("Error while executing verify playbook: " + e.getMessage());
 			return null;
-
 		}
 
 	}
@@ -208,7 +207,7 @@ public class StatesModel implements IStatesModel {
 		} catch (
 
 		Exception e) {
-			System.out.println("❌Error " + e.getMessage());
+			iStatesPresenterToModel.showError("Error " + e.getMessage());
 			e.printStackTrace();
 		}
 
@@ -223,15 +222,11 @@ public class StatesModel implements IStatesModel {
 
 			return null;
 		}
-
 		try {
-
 			int jsonStartIdx = rawOutput.indexOf("{");
 			if (jsonStartIdx == -1) {
-
 				return null;
 			}
-
 			JSONObject rootJson = new JSONObject(rawOutput.substring(jsonStartIdx).trim());
 			String rawMsg = rootJson.optString("msg", "");
 
@@ -242,8 +237,6 @@ public class StatesModel implements IStatesModel {
 		} catch (Exception e) {
 			iStatesPresenterToModel.showError("Error while executing verify playbook: " + e.getMessage());
 			return null;
-
 		}
-
 	}
 }

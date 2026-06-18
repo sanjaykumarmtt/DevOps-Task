@@ -3,8 +3,10 @@ package com.san.redistool.features.dataverify;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.san.redistool.features.BaseRedisTool;
 
-public class DataVerifyView implements IDataVerifyView {
+
+public class DataVerifyView extends BaseRedisTool implements IDataVerifyView {
 
     private static final String ANSI_RESET = "\u001B[0m";
     private static final String ANSI_GREEN = "\u001B[32m";
@@ -31,7 +33,7 @@ public class DataVerifyView implements IDataVerifyView {
 
         String jsonPart = extractJson(rawOutput);
         if (jsonPart == null) {
-            System.err.println(ANSI_RED + "❌ Could not locate JSON output in Ansible response." + ANSI_RESET);
+        	showError("❌ Could not locate JSON output in Ansible response.");
             if (exitCode != 0) System.err.println("Ansible Exit Code: " + exitCode);
             System.out.println("Raw Output:\n" + rawOutput);
            
@@ -53,19 +55,19 @@ public class DataVerifyView implements IDataVerifyView {
                 System.out.println("  ↳ Data Integrity Verified: 100% Intact.");
                 return true;
             } else {
-                System.out.println(ANSI_RED + ANSI_BOLD + "✗ [FAIL] Data Integrity Check Failed!" + ANSI_RESET);
-                System.out.println(ANSI_RED + "  ↳ Critical Metrics Summary:" + ANSI_RESET);
-                System.out.println(ANSI_RED + "      - Missing Keys: " + missing + ANSI_RESET);
-                System.out.println(ANSI_RED + "      - Mismatched Values (Corruption): " + mismatched + ANSI_RESET);
-                System.out.println(ANSI_RED + "      - Successfully Verified: " + verified + ANSI_RESET);
+            	showError(ANSI_BOLD + "✗ [FAIL] Data Integrity Check Failed!");
+            	showError("↳ Critical Metrics Summary:");
+            	showError("      - Missing Keys: " + missing);
+            	showError("      - Mismatched Values (Corruption): " + mismatched);
+            	showError("      - Successfully Verified: " + verified);
                 return false; 
             }
 
         } catch (JSONException e) {
-            System.err.println(ANSI_RED + "❌ Error parsing Ansible JSON: " + e.getMessage() + ANSI_RESET);
+        	showError("❌ Error parsing Ansible JSON: " + e.getMessage());
             return false;
         } catch (Exception e) {
-            System.err.println(ANSI_RED + "❌ Unexpected CLI error: " + e.getMessage() + ANSI_RESET);
+        	showError("❌ Unexpected CLI error: " + e.getMessage());
             return false;
         }
     }
@@ -73,7 +75,7 @@ public class DataVerifyView implements IDataVerifyView {
 
     @Override
     public void displayError(String errorMsg) {
-        System.err.println(ANSI_RED + "❌ " + errorMsg + ANSI_RESET);
+    	showError(errorMsg);
     }
 
     private String extractJson(String rawOutput) {

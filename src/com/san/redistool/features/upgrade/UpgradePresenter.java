@@ -2,14 +2,14 @@ package com.san.redistool.features.upgrade;
 
 public class UpgradePresenter implements IUpgradePresenterToView,IUpgradePresenterToModel {
 	
-	private  IUpgradeView iUpgradeViewl;
+	private  IUpdateView iUpgradeViewl;
 	
 	private  IUpgradeModel IUpgradeModel;
 
-	public UpgradePresenter(IUpgradeView iUpgradeViewl) {
+	public UpgradePresenter(IUpdateView iUpgradeViewl) {
 		
 		this.iUpgradeViewl = iUpgradeViewl;
-		this.IUpgradeModel =new UpgradeModel(this);
+		this.IUpgradeModel =new UpdateModel(this);
 	}
 
 	@Override

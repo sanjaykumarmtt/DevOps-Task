@@ -59,10 +59,6 @@ public class AnsibleConfig extends BaseRedisTool implements IAnsibleConfig {
 		executeDataSeedingPlaybook(seedPlaybook,dataSeedNumber);
 	}
 
-//	public void executeVerify() {
-//		executePlaybook(verifyPlaybook, "VERIFY");
-//	}
-
 	@Override
 	public String getStatus() {
 		return statusPlaybook;
@@ -92,11 +88,10 @@ public class AnsibleConfig extends BaseRedisTool implements IAnsibleConfig {
 			pb.environment().put("ANSIBLE_HOST_KEY_CHECKING", "False");
 
 			if (os.contains("win")) {
-//				String winCommand = "ansible-playbook -i " + inventoryPath + " " + playbookPath;
+
 				String winCommand = "ansible-playbook -i " + inventoryPath + " " + playbookPath + " --extra-vars \"redis_version=" + version + "\"";
 				pb.command("cmd.exe", "/c", winCommand);
 			} else {
-//				pb.command("ansible-playbook", "-i", inventoryPath, playbookPath);
 				pb.command("ansible-playbook", "-i", inventoryPath, playbookPath, "--extra-vars", "redis_version=" + version);
 			}
 
@@ -114,9 +109,6 @@ public class AnsibleConfig extends BaseRedisTool implements IAnsibleConfig {
 			}
 
 			int exitCode = process.waitFor();
-
-			// [FIX 2]: Added the missing routing logic for "STATUS" to catch the string
-			// buffer
 			
 				if (exitCode == 0) {
 					showMessage("\n✅ [SUCCESS] Execution finished without errors.");
@@ -138,7 +130,6 @@ public class AnsibleConfig extends BaseRedisTool implements IAnsibleConfig {
 			String os = System.getProperty("os.name").toLowerCase();
 			pb.environment().put("ANSIBLE_HOST_KEY_CHECKING", "False");
 
-			// 🚀 [VERIFIED] - அன்சிபிளுக்கு 'target_keys' என்ற பெயரில் வேரியபிளை டைனமிக்-ஆ பாஸ் பண்றோம் சஞ்சாய்!
 			if (os.contains("win")) {
 				String winCommand = "ansible-playbook -i " + inventoryPath + " " + playbookPath + " --extra-vars \"target_keys=" + dataSeedNumber + "\"";
 				pb.command("cmd.exe", "/c", winCommand);
@@ -163,7 +154,7 @@ public class AnsibleConfig extends BaseRedisTool implements IAnsibleConfig {
 			showError("❌ Error while executing playbook: " + e.getMessage());
 		}
 	}
-			// மெத்தடின் மீதி கோடு...
+
 
 	private void parseAndPrintSeedResult(String rawOutput, int exitCode) {
 		System.out.println(ANSI_CYAN + ANSI_BOLD + "\n=== Phase 2: Data Seeding ===" + ANSI_RESET);
@@ -203,7 +194,6 @@ public class AnsibleConfig extends BaseRedisTool implements IAnsibleConfig {
 			showError("❌ Unexpected CLI error: " + e.getMessage());
 		}
 	}
-
 	private String extractJson(String rawOutput) {
 		int startIndex = rawOutput.indexOf('{');
 		int endIndex = rawOutput.lastIndexOf('}');
@@ -212,9 +202,4 @@ public class AnsibleConfig extends BaseRedisTool implements IAnsibleConfig {
 		}
 		return null;
 	}
-
-
-
-
-
 }
